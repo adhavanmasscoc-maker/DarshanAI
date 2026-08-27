@@ -1,0 +1,166 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+:root {
+  --bg-light-ivory: #F9F6F0;
+  --bg-card-white: #FFFFFF;
+  --temple-maroon: #6B1D2F;
+  --temple-maroon-dark: #4A0E17;
+  --temple-gold: #C59B27;
+  --temple-gold-bright: #D4AF37;
+  --temple-saffron: #FF6F00;
+  --text-dark-brown: #2C1810;
+  --text-brown-muted: #5C4A3E;
+  --border-beige: #E0D5C7;
+  --border-gold-subtle: rgba(197, 155, 39, 0.4);
+  
+  --status-low: #2E7D32;
+  --status-moderate: #ED6C02;
+  --status-high: #E65100;
+  --status-critical: #D32F2F;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-light-ivory);
+  color: var(--text-dark-brown);
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Light Theme Temple Card */
+.temple-card {
+  background: var(--bg-card-white);
+  border: 1px solid var(--border-beige);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(107, 29, 47, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.temple-card:hover {
+  border-color: var(--temple-gold);
+  box-shadow: 0 8px 30px rgba(107, 29, 47, 0.12), 0 0 15px rgba(197, 155, 39, 0.15);
+  transform: translateY(-2px);
+}
+
+.gold-glow {
+  box-shadow: 0 4px 25px rgba(197, 155, 39, 0.2);
+  border-color: var(--temple-gold) !important;
+}
+
+.text-gold {
+  color: var(--temple-gold) !important;
+}
+
+.text-maroon {
+  color: var(--temple-maroon) !important;
+}
+
+.text-saffron {
+  color: var(--temple-saffron) !important;
+}
+
+.text-dark-brown {
+  color: var(--text-dark-brown) !important;
+}
+
+.bg-maroon {
+  background-color: var(--temple-maroon) !important;
+}
+
+.bg-ivory {
+  background-color: var(--bg-light-ivory) !important;
+}
+
+.border-gold {
+  border-color: var(--temple-gold) !important;
+}
+
+.border-beige {
+  border-color: var(--border-beige) !important;
+}
+
+/* Light Theme Badges */
+.badge-low {
+  background-color: rgba(46, 125, 50, 0.12);
+  color: #2E7D32;
+  border: 1px solid #2E7D32;
+  font-weight: 600;
+}
+
+.badge-moderate {
+  background-color: rgba(237, 108, 2, 0.12);
+  color: #ED6C02;
+  border: 1px solid #ED6C02;
+  font-weight: 600;
+}
+
+.badge-high {
+  background-color: rgba(230, 81, 0, 0.12);
+  color: #E65100;
+  border: 1px solid #E65100;
+  font-weight: 600;
+}
+
+.badge-critical {
+  background-color: rgba(211, 47, 47, 0.15);
+  color: #D32F2F;
+  border: 1px solid #D32F2F;
+  font-weight: 700;
+  animation: pulse-critical-light 1.5s infinite;
+}
+
+@keyframes pulse-critical-light {
+  0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(211, 47, 47, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
+}
+
+/* Form inputs styling for light theme */
+.form-control, .form-select {
+  background-color: #FFFFFF !important;
+  color: var(--text-dark-brown) !important;
+  border-color: var(--border-beige) !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--temple-maroon) !important;
+  box-shadow: 0 0 0 0.25rem rgba(107, 29, 47, 0.15) !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-light-ivory);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--temple-gold);
+  border-radius: 3px;
+}
+
+/* Leaflet Map */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background-color: #FDFBF7 !important;
+}
+
+/* Gopuram Arch Decorative Accent */
+.gopuram-border {
+  position: relative;
+}
+.gopuram-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 4px;
+  background: var(--temple-gold);
+  border-radius: 0 0 4px 4px;
+}

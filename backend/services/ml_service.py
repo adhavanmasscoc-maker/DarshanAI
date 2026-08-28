@@ -61,6 +61,31 @@ class MLService:
             "recommendations": recs
         }
 
+    def predict_batch(self, payloads: list[dict]):
+        """Vectorized batch inference for thousands of devotee / operational records."""
+        if not self.preprocessor:
+            raise RuntimeError("ML Models are not loaded.")
+        if not payloads:
+            return []
+
+        df = pd.DataFrame(payloads)
+        X_scaled = self.preprocessor.transform(df)
+
+        pred_vis = self.crowd_regressor.predict(X_scaled).astype(int)
+        pred_crw = self.crowd_classifier.predict(X_scaled).astype(str)
+        pred_rsk = self.risk_classifier.predict(X_scaled).astype(str)
+        pred_wt = np.round(self.waiting_time_model.predict(X_scaled).astype(float), 1)
+
+        results = []
+        for i in range(len(payloads)):
+            results.append({
+                "predicted_visitor_count": int(pred_vis[i]),
+                "predicted_crowd_level": str(pred_crw[i]),
+                "predicted_risk_level": str(pred_rsk[i]),
+                "predicted_waiting_time": float(pred_wt[i])
+            })
+        return results
+
     def _generate_recommendations(self, crowd_lvl, risk_lvl, queue_len, is_anomaly):
         recs = []
         if is_anomaly:

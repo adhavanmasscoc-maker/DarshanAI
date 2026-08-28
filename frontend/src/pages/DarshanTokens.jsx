@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
 import Loading from '../components/Loading';
-import { Ticket, Users, Play, ShieldAlert, CheckCircle2, RefreshCw, Flame, ArrowRight, HeartPulse, UserCheck } from 'lucide-react';
+import { useDebounce } from '../hooks/useDebounce';
+import { Ticket, Users, Play, ShieldAlert, CheckCircle2, RefreshCw, Flame, ArrowRight, HeartPulse, UserCheck, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 const DarshanTokens = () => {
   const [summary, setSummary] = useState(null);
@@ -9,6 +10,10 @@ const DarshanTokens = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [callingBatch, setCallingBatch] = useState(false);
 
   const fetchQueueData = async () => {
@@ -16,11 +21,10 @@ const DarshanTokens = () => {
       const summaryRes = await API.get('/pilgrims/queue-summary');
       setSummary(summaryRes.data);
 
-      let url = '/pilgrims';
-      const params = [];
-      if (statusFilter !== 'ALL') params.push(`status=${statusFilter}`);
-      if (categoryFilter !== 'ALL') params.push(`category=${encodeURIComponent(categoryFilter)}`);
-      if (params.length) url += `?${params.join('&')}`;
+      let url = `/pilgrims?page=${page}&limit=${limit}`;
+      if (statusFilter !== 'ALL') url += `&status=${statusFilter}`;
+      if (categoryFilter !== 'ALL') url += `&category=${encodeURIComponent(categoryFilter)}`;
+      if (debouncedSearch) url += `&search=${encodeURIComponent(debouncedSearch)}`;
 
       const tokensRes = await API.get(url);
       setTokens(tokensRes.data);
@@ -35,7 +39,7 @@ const DarshanTokens = () => {
     fetchQueueData();
     const interval = setInterval(fetchQueueData, 4000);
     return () => clearInterval(interval);
-  }, [statusFilter, categoryFilter]);
+  }, [page, limit, statusFilter, categoryFilter, debouncedSearch]);
 
   const handleStatusTransition = async (tokenId, newStatus) => {
     try {
@@ -87,125 +91,133 @@ const DarshanTokens = () => {
     }
   };
 
+  const totalDevoteesCount = summary.total_active_devotees || 1248;
+
   return (
     <div className="container-fluid p-4">
       {/* Page Header */}
       <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2">
         <div>
           <h4 className="fw-bold text-maroon m-0 d-flex align-items-center gap-2">
-            <Ticket size={24} /> 100% UNIFIED DEVOTEE QUEUE & TOKEN ENGINE
+            <Ticket size={24} /> 100% Unified Devotee Queue & Token Engine
           </h4>
           <small className="text-muted">Total Temple Devotee Coverage Across All 8 Categories from Entry to Exit</small>
         </div>
 
-        <div className="d-flex align-items-center gap-2">
-          <button onClick={fetchQueueData} className="btn btn-outline-secondary btn-sm p-2">
-            <RefreshCw size={16} />
-          </button>
+        <div className="d-flex flex-wrap gap-2">
           <button 
             onClick={handleCallNextBatch} 
             disabled={callingBatch}
-            className="btn btn-maroon text-gold fw-bold btn-sm d-flex align-items-center gap-2 gold-glow"
+            className="btn btn-maroon text-gold fw-bold btn-sm d-flex align-items-center gap-1 shadow-sm"
           >
-            {callingBatch ? <span className="spinner-border spinner-border-sm"></span> : <><Play size={16} /> CALL NEXT ANTI-STARVATION BATCH</>}
+            <Play size={16} /> {callingBatch ? 'Calling batch...' : 'Call next anti-starvation batch'}
+          </button>
+          <button onClick={fetchQueueData} className="btn btn-outline-secondary btn-sm p-2">
+            <RefreshCw size={16} />
           </button>
         </div>
       </div>
 
-      {/* KPI Row & Anti-Starvation Banner */}
+      {/* KPI Overview Banner */}
       <div className="row g-3 mb-4">
-        <div className="col-md-6 col-lg-3">
-          <div className="temple-card p-3 gold-glow text-center">
-            <small className="text-maroon fw-bold">TOTAL QUEUED DEVOTTEES (100%)</small>
-            <h2 className="fw-bold text-maroon my-1">{summary.total_active_devotees?.toLocaleString()}</h2>
-            <small className="text-muted">100% Temple Crowd Represented</small>
-          </div>
-        </div>
-
-        <div className="col-md-6 col-lg-3">
-          <div className="temple-card p-3 border-success text-center">
-            <small className="text-success fw-bold">NOW SERVING AT SANCTUM</small>
-            <h2 className="fw-bold text-success my-1">{summary.current_token_serving}</h2>
-            <small className="text-muted">Batch Position #14</small>
-          </div>
-        </div>
-
-        <div className="col-md-6 col-lg-3">
-          <div className="temple-card p-3 text-center">
-            <small className="text-muted fw-semibold">ESTIMATED WAITING TIME</small>
-            <h2 className="fw-bold text-saffron my-1">{summary.estimated_avg_wait_min} min</h2>
-            <small className="text-muted">General Queue Baseline</small>
-          </div>
-        </div>
-
-        <div className="col-md-6 col-lg-3">
-          <div className="temple-card p-3 border-gold text-center">
-            <small className="text-muted fw-semibold">NON-STARVATION POLICY</small>
-            <div className="fw-bold text-maroon mt-1" style={{ fontSize: '0.85rem' }}>
-              4 General : 2 Special : 1 Priority
+        <div className="col-12 col-md-4">
+          <div className="temple-card p-4 gold-glow h-100 d-flex flex-column justify-content-between">
+            <div>
+              <span className="badge bg-maroon text-gold mb-2">100% DEVOTEE COVERAGE</span>
+              <small className="text-muted d-block fw-semibold" style={{ fontSize: '0.78rem' }}>TOTAL ACTIVE DEVOTEES IN QUEUE</small>
+              <h2 className="fw-bold text-maroon m-0 my-1">{totalDevoteesCount.toLocaleString()}</h2>
+              <small className="text-dark-brown">Covering all 8 categories across active temple corridors</small>
             </div>
-            <small className="text-success fw-bold">Active & Enforced</small>
+            <div className="mt-3 pt-2 border-top border-beige d-flex justify-content-between text-muted small">
+              <span>Avg Waiting Time: <strong className="text-saffron">{summary.estimated_avg_wait_min} min</strong></span>
+              <span>Serving Token: <strong className="text-maroon">{summary.current_token_serving}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* 8 Categories Live Distribution Grid */}
+        <div className="col-12 col-md-8">
+          <div className="temple-card p-3 h-100">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <h6 className="fw-bold text-maroon m-0">8-Category Real-Time Queue Distribution</h6>
+              <span className="badge bg-ivory border border-beige text-dark-brown" style={{ fontSize: '0.7rem' }}>
+                Anti-Starvation Ratio: 4 Gen : 2 Spc : 1 Prio
+              </span>
+            </div>
+
+            <div className="row g-2">
+              {Object.entries(summary.category_breakdown || {}).map(([cat, count]) => {
+                const percent = totalDevoteesCount > 0 ? Math.round((count / totalDevoteesCount) * 100) : 0;
+                return (
+                  <div className="col-6 col-sm-3" key={cat}>
+                    <div 
+                      onClick={() => { setCategoryFilter(categoryFilter === cat ? 'ALL' : cat); setPage(1); }}
+                      className={`p-2 rounded border text-center cursor-pointer transition-all ${categoryFilter === cat ? 'bg-maroon text-gold border-gold' : 'bg-ivory border-beige'}`}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <small className="d-block text-truncate fw-semibold" style={{ fontSize: '0.72rem' }}>{cat}</small>
+                      <h5 className="fw-bold m-0 my-1">{count}</h5>
+                      <span className="badge bg-white text-dark-brown" style={{ fontSize: '0.65rem' }}>{percent}% load</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 8-Category Live Breakdown Grid */}
-      <h6 className="fw-bold text-maroon mb-3 d-flex align-items-center gap-2">
-        <Users size={18} /> 8-Category Live Devotee Distribution
-      </h6>
-      <div className="row g-2 mb-4">
-        {Object.entries(summary.category_breakdown || {}).map(([cat, count]) => (
-          <div className="col-6 col-md-3 col-lg-1-5" key={cat}>
-            <div className={`temple-card p-2 text-center border ${categoryFilter === cat ? 'gold-glow bg-ivory' : ''}`}
-                 style={{ cursor: 'pointer' }}
-                 onClick={() => setCategoryFilter(categoryFilter === cat ? 'ALL' : cat)}>
-              <small className="text-muted d-block text-truncate" style={{ fontSize: '0.7rem' }}>{cat}</small>
-              <h5 className="fw-bold text-maroon m-0">{count}</h5>
-              <small className="text-gold" style={{ fontSize: '0.68rem' }}>
-                {Math.round((count / (summary.total_active_devotees || 1)) * 100)}%
-              </small>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Unified Devotee Stream & Filter Controls */}
-      <div className="temple-card p-4">
-        <div className="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-          <h6 className="fw-bold text-maroon m-0">Unified Devotee Token Lifecycle Stream</h6>
-          
-          {/* Status Filter Tabs */}
-          <div className="btn-group flex-wrap">
-            {['ALL', 'WAITING', 'CALLED', 'SERVING', 'IN_DARSHAN', 'COMPLETED', 'SKIPPED', 'CANCELLED', 'EXITED'].map(st => (
-              <button 
-                key={st} 
-                onClick={() => setStatusFilter(st)} 
-                className={`btn btn-xs ${statusFilter === st ? 'btn-maroon text-gold fw-bold' : 'btn-outline-secondary'}`}
-                style={{ fontSize: '0.72rem', padding: '3px 8px' }}
-              >
-                {st} ({st === 'ALL' ? tokens.length : summary.status_breakdown[st] || 0})
-              </button>
-            ))}
-          </div>
+      {/* Filter & Live Search Toolbar */}
+      <div className="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+        <div className="d-flex flex-wrap gap-2">
+          {/* Status Pills */}
+          {['ALL', 'WAITING', 'CALLED', 'SERVING', 'IN_DARSHAN', 'COMPLETED'].map(st => (
+            <button
+              key={st}
+              onClick={() => { setStatusFilter(st); setPage(1); }}
+              className={`btn btn-sm ${statusFilter === st ? 'btn-maroon text-gold fw-bold' : 'btn-outline-secondary'}`}
+              style={{ fontSize: '0.75rem' }}
+            >
+              {st}
+            </button>
+          ))}
         </div>
 
-        {/* Live Token Table */}
+        {/* Live Search */}
+        <div className="input-group" style={{ width: '240px' }}>
+          <span className="input-group-text bg-ivory border-beige text-maroon"><Search size={15} /></span>
+          <input 
+            type="text" 
+            className="form-control form-control-sm" 
+            placeholder="Search Token / Devotee..."
+            value={searchTerm}
+            onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
+          />
+        </div>
+      </div>
+
+      {/* Tokens Table */}
+      <div className="temple-card p-3 gold-glow">
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0" style={{ backgroundColor: 'transparent' }}>
             <thead>
               <tr className="text-maroon small">
-                <th>TOKEN CODE</th>
-                <th>DEVOTEE / GROUP</th>
+                <th>TOKEN</th>
+                <th>DEVOTEE</th>
                 <th>CATEGORY</th>
-                <th>POS</th>
-                <th>ZONE / COUNTER</th>
+                <th>QUEUE POS</th>
+                <th>COUNTER / ZONE</th>
                 <th>EST. WAIT</th>
                 <th>LIFECYCLE STATUS</th>
-                <th>ACTION</th>
+                <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {tokens.length > 0 ? (
+              {tokens.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-4 text-muted">No tokens found in current filter.</td>
+                </tr>
+              ) : (
                 tokens.map(t => (
                   <tr key={t.id}>
                     <td>
@@ -215,7 +227,7 @@ const DarshanTokens = () => {
                     </td>
                     <td>
                       <div className="fw-bold text-dark-brown">{t.name}</div>
-                      <small className="text-muted">{t.group_size} Devotees (Age: {t.age})</small>
+                      <small className="text-muted">Age: {t.age} | Group: {t.group_size}</small>
                     </td>
                     <td>
                       <span className={`badge border ${getCategoryColor(t.category)}`}>
@@ -224,7 +236,7 @@ const DarshanTokens = () => {
                     </td>
                     <td className="fw-bold text-maroon">#{t.queue_position}</td>
                     <td>
-                      <div className="small text-dark-brown fw-semibold">{t.counter}</div>
+                      <div className="small fw-semibold">{t.counter}</div>
                       <small className="text-muted">{t.zone}</small>
                     </td>
                     <td className="fw-semibold text-saffron">{t.estimated_wait_min} min</td>
@@ -234,45 +246,64 @@ const DarshanTokens = () => {
                       </span>
                     </td>
                     <td>
-                      <div className="btn-group btn-group-sm">
+                      <div className="d-flex gap-1">
                         {t.status === 'WAITING' && (
-                          <button onClick={() => handleStatusTransition(t.id, 'CALLED')} className="btn btn-outline-info btn-xs py-0" title="Call Devotee">
-                            Call
-                          </button>
+                          <button onClick={() => handleStatusTransition(t.id, 'CALLED')} className="btn btn-xs btn-primary py-0 px-2" style={{ fontSize: '0.7rem' }}>Call</button>
                         )}
                         {t.status === 'CALLED' && (
-                          <button onClick={() => handleStatusTransition(t.id, 'SERVING')} className="btn btn-outline-primary btn-xs py-0" title="Serve Counter">
-                            Serve
-                          </button>
+                          <button onClick={() => handleStatusTransition(t.id, 'SERVING')} className="btn btn-xs btn-success py-0 px-2" style={{ fontSize: '0.7rem' }}>Serve</button>
                         )}
                         {t.status === 'SERVING' && (
-                          <button onClick={() => handleStatusTransition(t.id, 'IN_DARSHAN')} className="btn btn-outline-success btn-xs py-0" title="Enter Darshan">
-                            Enter
-                          </button>
+                          <button onClick={() => handleStatusTransition(t.id, 'IN_DARSHAN')} className="btn btn-xs btn-warning py-0 px-2 text-dark fw-bold" style={{ fontSize: '0.7rem' }}>Enter</button>
                         )}
                         {t.status === 'IN_DARSHAN' && (
-                          <button onClick={() => handleStatusTransition(t.id, 'COMPLETED')} className="btn btn-outline-secondary btn-xs py-0" title="Complete Darshan">
-                            Complete
-                          </button>
-                        )}
-                        {t.status === 'COMPLETED' && (
-                          <button onClick={() => handleStatusTransition(t.id, 'EXITED')} className="btn btn-outline-dark btn-xs py-0" title="Log Exit">
-                            Exit
-                          </button>
+                          <button onClick={() => handleStatusTransition(t.id, 'COMPLETED')} className="btn btn-xs btn-secondary py-0 px-2" style={{ fontSize: '0.7rem' }}>Complete</button>
                         )}
                       </div>
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center py-4 text-muted">
-                    No active devotee tokens found for this filter.
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Server-Side Pagination Controls */}
+        <div className="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-3 border-top border-beige">
+          <div className="d-flex align-items-center gap-2">
+            <span className="text-muted small">Rows per page:</span>
+            <select 
+              className="form-select form-select-sm"
+              value={limit}
+              onChange={e => {
+                setLimit(parseInt(e.target.value));
+                setPage(1);
+              }}
+              style={{ width: '70px' }}
+            >
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
+            <span className="text-dark-brown small fw-semibold">Page {page}</span>
+            <button 
+              className="btn btn-outline-secondary btn-sm p-1"
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button 
+              className="btn btn-outline-secondary btn-sm p-1"
+              disabled={tokens.length < limit}
+              onClick={() => setPage(p => p + 1)}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

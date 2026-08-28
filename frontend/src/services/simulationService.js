@@ -32,6 +32,10 @@ export const simulationService = {
   },
 
   createWebSocket: (templeId, token) => {
+    const customWs = import.meta.env.VITE_WS_URL;
+    if (customWs) {
+      return new WebSocket(`${customWs}/api/simulation/ws/${templeId}?token=${token}`);
+    }
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/simulation/ws/${templeId}?token=${token}`;
     return new WebSocket(wsUrl);

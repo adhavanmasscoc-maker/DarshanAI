@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Resolve API base URL from environment variables with fallback
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) return envUrl;
+  return '/api';
+};
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },

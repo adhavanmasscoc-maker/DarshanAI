@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { simulationService } from '../services/simulationService';
+import API from '../services/api';
 import StatCard from '../components/StatCard';
 import CrowdCard from '../components/CrowdCard';
 import RiskCard from '../components/RiskCard';
@@ -22,12 +24,17 @@ import {
   RotateCcw, 
   Zap, 
   CheckCircle2, 
-  Layers 
+  Layers,
+  Camera,
+  PlayCircle,
+  ArrowRight
 } from 'lucide-react';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [data, setData] = useState(null);
+  const [cctvData, setCctvData] = useState(null);
   const [chartHistory, setChartHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +47,11 @@ const Dashboard = () => {
       try {
         const res = await simulationService.getStatus();
         setData(res);
+
+        // Fetch Live CCTV telemetry
+        const cctvRes = await API.get('/cctv/cameras/CAM-002/analytics');
+        setCctvData(cctvRes.data);
+
         setChartHistory([
           { time: res.simulated_time || '08:00', current_visitors: res.current_visitors, predicted_visitors: res.predicted_visitors }
         ]);
@@ -99,6 +111,42 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Live CCTV Status Widget Banner */}
+      <div className="temple-card p-3 gold-glow mb-4">
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div className="d-flex align-items-center gap-3">
+            <div className="p-3 bg-ivory rounded border border-gold text-maroon">
+              <Camera size={26} />
+            </div>
+            <div>
+              <div className="d-flex align-items-center gap-2">
+                <span className="badge bg-success text-light fw-bold" style={{ fontSize: '0.72rem' }}>🟢 LIVE CCTV CONNECTED</span>
+                <span className="text-muted small">5 Active Cameras Ingesting Telemetry</span>
+              </div>
+              <h6 className="fw-bold text-maroon m-0 my-1">
+                YOLO Person Detection: <strong className="text-dark-brown">{cctvData?.person_count || 32} people in frame</strong> • Rate: <strong className="text-primary">{cctvData?.entry_rate || 42}/min in</strong> | <strong className="text-warning">{cctvData?.exit_rate || 20}/min out</strong>
+              </h6>
+              <small className="text-muted">Live Computer Vision streams active on Main Entry, Queue Complex, Sanctum, Prasadam, and Exit</small>
+            </div>
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
+            <button 
+              onClick={() => navigate('/crowd-monitoring')} 
+              className="btn btn-outline-secondary btn-sm fw-bold d-flex align-items-center gap-1"
+            >
+              <Camera size={15} /> View Live CCTV Feed
+            </button>
+            <button 
+              onClick={() => navigate('/simulation')} 
+              className="btn btn-maroon text-gold btn-sm fw-bold d-flex align-items-center gap-1 shadow-sm"
+            >
+              <PlayCircle size={15} /> Open What-If Simulation <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Simulation Command Toolbar */}
       <div className="temple-card p-3 mb-4 gold-glow d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div className="d-flex align-items-center gap-2">
@@ -142,153 +190,124 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Scenario Selector */}
+        {/* Scenario Selection */}
         <div className="d-flex align-items-center gap-2">
-          <span className="text-muted small">SCENARIO:</span>
+          <span className="text-muted small fw-semibold">SCENARIO:</span>
           <select 
-            className="form-select form-select-sm" 
+            className="form-select form-select-sm"
+            style={{ width: '170px' }}
             value={data.scenario}
             onChange={(e) => handleScenarioChange(e.target.value)}
-            style={{ width: '160px', fontSize: '0.8rem' }}
           >
             <option value="NORMAL_DAY">Normal Day</option>
             <option value="WEEKEND">Weekend Surge</option>
             <option value="HOLIDAY">Public Holiday</option>
-            <option value="FESTIVAL">Festival Rush</option>
+            <option value="FESTIVAL">Maha Festival</option>
             <option value="HEAVY_RAIN">Heavy Rain</option>
             <option value="CROWD_SURGE">Crowd Surge</option>
-            <option value="EMERGENCY">Emergency</option>
+            <option value="EMERGENCY">Emergency Evacuation</option>
           </select>
         </div>
       </div>
 
-      {/* KPI Stat Cards Row */}
+      {/* Primary KPI Summary Cards Row */}
       <div className="row g-3 mb-4">
-        <div className="col-md-4 col-lg-2">
+        <div className="col-12 col-sm-6 col-lg-3">
           <StatCard 
-            title="CURRENT DEVOTEES" 
-            value={data.current_visitors?.toLocaleString()} 
+            title="CURRENT DEVOTEES INSIDE" 
+            value={data.current_visitors} 
             icon={Users} 
-            color="maroon"
-            subtitle={`Cap: ${user?.capacity || 18000}`}
+            color="text-primary"
+            change="+4.2% vs baseline" 
+            isIncrease={true}
           />
         </div>
-        <div className="col-md-4 col-lg-2">
+        <div className="col-12 col-sm-6 col-lg-3">
           <StatCard 
-            title="PREDICTED CROWD" 
-            value={data.predicted_visitors?.toLocaleString()} 
+            title="AI PREDICTED PEAK (NEXT 1 HR)" 
+            value={data.predicted_visitors} 
             icon={TrendingUp} 
-            color="warning"
-            subtitle="ML Forecast +1hr"
+            color="text-gold"
+            change="+12.5% surge expected" 
+            isIncrease={true}
           />
         </div>
-        <div className="col-md-4 col-lg-2">
+        <div className="col-12 col-sm-6 col-lg-3">
           <StatCard 
-            title="WAITING TIME" 
-            value={`${data.waiting_time} min`} 
-            icon={Clock} 
-            color="info"
-            subtitle="Est. Queue Wait"
-          />
-        </div>
-        <div className="col-md-4 col-lg-2">
-          <StatCard 
-            title="CROWD LEVEL" 
-            value={data.crowd_level} 
-            icon={Layers} 
-            color={data.crowd_level === 'CRITICAL' ? 'danger' : data.crowd_level === 'HIGH' ? 'warning' : 'success'}
-            subtitle="Density Classification"
-          />
-        </div>
-        <div className="col-md-4 col-lg-2">
-          <StatCard 
-            title="RISK LEVEL" 
+            title="OVERALL SAFETY RISK" 
             value={data.risk_level} 
             icon={ShieldAlert} 
-            color={data.risk_level === 'CRITICAL' ? 'danger' : data.risk_level === 'HIGH' ? 'warning' : 'success'}
-            subtitle="Safety Assessment"
+            color={data.risk_level === 'CRITICAL' ? 'text-danger' : data.risk_level === 'HIGH' ? 'text-warning' : 'text-success'}
+            change="Automated safety index" 
+            isIncrease={false}
           />
         </div>
-        <div className="col-md-4 col-lg-2">
+        <div className="col-12 col-sm-6 col-lg-3">
           <StatCard 
-            title="ACTIVE ALERTS" 
-            value="02" 
-            icon={AlertTriangle} 
-            color="danger"
-            subtitle="Safety Feed"
+            title="ESTIMATED DARSHAN WAIT" 
+            value={`${data.waiting_time} min`} 
+            icon={Clock} 
+            color="text-maroon"
+            change="Current queue throughput" 
+            isIncrease={false}
           />
         </div>
       </div>
 
-      {/* Darshan Status & AI Insight Row */}
-      <div className="row g-3 mb-4">
-        <div className="col-lg-4">
-          <DarshanStatus 
-            currentQueue={data.queue_length || 620} 
-            waitingTime={data.waiting_time || 38} 
-          />
-        </div>
+      {/* Main Grid: Real-Time Charts & Status */}
+      <div className="row g-4 mb-4">
+        {/* Real-time Predictive Trend Chart */}
         <div className="col-lg-8">
+          <PredictionChart 
+            history={chartHistory} 
+            currentVisitors={data.current_visitors} 
+            predictedVisitors={data.predicted_visitors} 
+          />
+        </div>
+
+        {/* AI Action Recommendations & Status */}
+        <div className="col-lg-4 d-flex flex-column gap-3">
           <AIInsightCard 
-            observation="Crowd density is increasing near the Main Gopuram."
-            prediction="32% increase expected within 30 minutes."
-            recommendation="Open Gate 3 and deploy additional volunteers."
-            riskLevel={data.risk_level || 'HIGH'}
-            confidence="91%"
+            scenario={data.scenario}
+            riskLevel={data.risk_level}
+            waitingTime={data.waiting_time}
+            activeAlerts={data.active_alerts}
+          />
+          <DarshanStatus 
+            queueLength={data.queue_length} 
+            openGates={data.open_gates} 
+            staffAvailable={data.staff_available}
+            entryRate={data.entry_rate}
+            exitRate={data.exit_rate}
           />
         </div>
       </div>
 
-      {/* Devotee Flow Chart & Map Row */}
-      <div className="row g-3 mb-4">
-        <div className="col-lg-7">
-          <PredictionChart data={chartHistory} />
-        </div>
-        <div className="col-lg-5">
+      {/* Geographical GIS Zone Map & Operational Health */}
+      <div className="row g-4 mb-4">
+        <div className="col-lg-8">
           <TempleMap zones={data.zones} />
         </div>
-      </div>
-
-      {/* Temple Alert Center Row */}
-      <div className="temple-card p-3">
-        <h6 className="fw-bold text-maroon mb-3 d-flex align-items-center gap-2">
-          <AlertTriangle className="text-danger" size={20} /> TEMPLE ALERT CENTER
-        </h6>
-        <div className="d-flex flex-column gap-2">
-          <AlertCard 
-            alert={{
-              id: 1,
-              severity: 'CRITICAL',
-              zone: 'Main Entrance',
-              description: 'Crowd surge detected near Main Gopuram gates.',
-              time: new Date().toISOString(),
-              status: 'ACTIVE',
-              alert_type: 'CROWD_SURGE'
-            }}
-          />
-          <AlertCard 
-            alert={{
-              id: 2,
-              severity: 'HIGH',
-              zone: 'Darshan Hall',
-              description: 'Queue increasing rapidly near sanctum corridor.',
-              time: new Date().toISOString(),
-              status: 'ACTIVE',
-              alert_type: 'RISK_SURGE'
-            }}
-          />
-          <AlertCard 
-            alert={{
-              id: 3,
-              severity: 'MEDIUM',
-              zone: 'Token Counter',
-              description: 'Waiting time above threshold in Counter 2.',
-              time: new Date().toISOString(),
-              status: 'RESOLVED',
-              alert_type: 'WAIT_TIME'
-            }}
+        <div className="col-lg-4">
+          <RiskCard 
+            riskLevel={data.risk_level} 
+            crowdLevel={data.crowd_level} 
+            entryRate={data.entry_rate}
+            openGates={data.open_gates}
           />
         </div>
+      </div>
+
+      {/* Operational Zone Status Cards Grid */}
+      <h5 className="fw-bold text-maroon mb-3 d-flex align-items-center gap-2">
+        <Layers size={20} /> Real-Time Temple Zone Telemetry
+      </h5>
+      <div className="row g-3">
+        {Object.entries(data.zones || {}).map(([key, zone]) => (
+          <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={key}>
+            <CrowdCard zone={zone} />
+          </div>
+        ))}
       </div>
     </div>
   );

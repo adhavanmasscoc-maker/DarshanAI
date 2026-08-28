@@ -10,9 +10,10 @@ from backend.models.zone import TempleZone
 from backend.models.user import User
 from backend.models.alert import Alert
 from backend.models.pilgrim import Pilgrim
+from backend.models.cctv import CCTVCamera, LiveCrowdMeasurement, SimulationRun
 from backend.services.auth_service import get_password_hash
 
-from backend.routers import auth, temples, dashboard, ml, simulation, alerts, pilgrims
+from backend.routers import auth, temples, dashboard, ml, simulation, alerts, pilgrims, cctv
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -37,6 +38,7 @@ app.include_router(ml.router, prefix=settings.API_V1_STR)
 app.include_router(simulation.router, prefix=settings.API_V1_STR)
 app.include_router(alerts.router, prefix=settings.API_V1_STR)
 app.include_router(pilgrims.router, prefix=settings.API_V1_STR)
+app.include_router(cctv.router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 def startup_event():

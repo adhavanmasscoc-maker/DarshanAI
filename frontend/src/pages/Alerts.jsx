@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react';
 import API from '../services/api';
 import AlertCard from '../components/AlertCard';
 import Loading from '../components/Loading';
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 
 const AlertsPage = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [error, setError] = useState(null);
 
   const fetchAlerts = async () => {
     try {
       const res = await API.get('/alerts');
-      setAlerts(res.data);
+      setAlerts(res.data || []);
+      setError(null);
     } catch (err) {
       console.error(err);
+      setError('Unable to retrieve alerts feed.');
     } finally {
       setLoading(false);
     }
@@ -39,7 +42,22 @@ const AlertsPage = () => {
     return true;
   });
 
-  if (loading) return <Loading />;
+  if (loading && alerts.length === 0) return <Loading />;
+
+  if (error && alerts.length === 0) {
+    return (
+      <div className="container p-4 d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
+        <div className="temple-card p-4 text-center gold-glow" style={{ maxWidth: '480px' }}>
+          <AlertTriangle size={36} className="text-warning mb-2" />
+          <h5 className="fw-bold text-maroon mb-2">Alert Feed Offline</h5>
+          <p className="text-muted small mb-3">{error}</p>
+          <button onClick={fetchAlerts} className="btn btn-maroon text-gold fw-bold d-inline-flex align-items-center gap-1">
+            <RefreshCw size={15} /> Retry connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-fluid p-4">

@@ -8,7 +8,7 @@ import { MapPin, Shield, Users, HeartPulse, Flame, Utensils, LogOut, Car, AlertT
 const MapController = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    if (center && center[0] && center[1]) {
+    if (center && typeof center[0] === 'number' && typeof center[1] === 'number' && !isNaN(center[0]) && !isNaN(center[1])) {
       map.flyTo(center, zoom || 18, {
         duration: 1.5,
         easeLinearity: 0.25
@@ -28,6 +28,51 @@ const TempleMap = ({
   selectedZoneId = null,
   onSelectZone = () => {} 
 }) => {
+
+  const safeLat = typeof templeLat === 'number' && !isNaN(templeLat) ? templeLat : 20.8880;
+  const safeLng = typeof templeLng === 'number' && !isNaN(templeLng) ? templeLng : 70.4012;
+
+  // Defensive Zone Normalization (Handles both Array and Object map from Simulation)
+  const normalizedZones = Array.isArray(zones)
+    ? zones
+    : typeof zones === 'object' && zones !== null
+      ? Object.entries(zones).map(([key, z], idx) => {
+          const offsetMap = {
+            main_entrance: [0.0008, -0.0007],
+            registration: [0.0005, -0.0004],
+            queue_area: [0.0002, -0.0002],
+            darshan_hall: [0, 0],
+            prasadam_area: [-0.0005, 0.0003],
+            exit_gates: [-0.0006, -0.0004],
+            parking_lot: [0.0015, -0.0017],
+            medical_center: [0.0007, 0]
+          };
+          const offsets = offsetMap[key] || [0.0001 * (idx + 1), 0.0001 * (idx + 1)];
+          const lat = z.latitude || safeLat + offsets[0];
+          const lng = z.longitude || safeLng + offsets[1];
+          const cap = z.capacity || 2000;
+          const vis = z.visitors || z.current_devotees || 0;
+          const q = z.queue || z.queue_length || 0;
+
+          return {
+            id: z.id || idx + 1,
+            zone_code: z.zone_code || key,
+            name: z.name || key.replace(/_/g, ' ').toUpperCase(),
+            zone_type: z.zone_type || 'QUEUE',
+            latitude: lat,
+            longitude: lng,
+            capacity: cap,
+            current_devotees: vis,
+            occupancy_percent: z.occupancy_percent || Math.min(100, Math.round((vis / cap) * 100)),
+            queue_length: q,
+            estimated_wait_min: z.estimated_wait_min || Math.round(q / 25.0),
+            risk_level: z.risk_level || 'LOW',
+            is_verified: z.is_verified ?? false,
+            icon_type: z.icon_type || 'MapPin',
+            staff_assigned: z.staff_assigned || 5
+          };
+        })
+      : [];
 
   const getMarkerColor = (risk) => {
     switch (risk?.toUpperCase()) {
@@ -54,7 +99,7 @@ const TempleMap = ({
   };
 
   return (
-    <div className="w-100 h-100 position-relative rounded overflow-hidden" style={{ minHeight: '520px', border: '1px solid #E0D5C7' }}>
+    <div className="w-100 h-100 position-relative rounded overflow-hidden" style={{ minHeight: '420px', border: '1px solid #E0D5C7', backgroundColor: '#FDFBF7' }}>
       {/* Map Legend Overlay */}
       <div 
         className="position-absolute top-0 end-0 m-3 p-2 rounded shadow-sm bg-white border border-gold" 
@@ -73,12 +118,12 @@ const TempleMap = ({
       </div>
 
       <MapContainer 
-        center={[templeLat, templeLng]} 
+        center={[safeLat, safeLng]} 
         zoom={zoomLevel} 
         scrollWheelZoom={true} 
-        style={{ width: '100%', height: '100%', minHeight: '520px' }}
+        style={{ width: '100%', height: '100%', minHeight: '420px' }}
       >
-        <MapController center={[templeLat, templeLng]} zoom={zoomLevel} />
+        <MapController center={[safeLat, safeLng]} zoom={zoomLevel} />
         
         {/* OpenStreetMap Standard Tiles */}
         <TileLayer
@@ -89,7 +134,7 @@ const TempleMap = ({
 
         {/* Temple Main Shrine Center Marker */}
         <CircleMarker
-          center={[templeLat, templeLng]}
+          center={[safeLat, safeLng]}
           radius={12}
           pathOptions={{
             color: '#6B1D2F',
@@ -106,7 +151,7 @@ const TempleMap = ({
               <strong className="text-maroon d-block">{templeName}</strong>
               <small className="text-muted">Primary GPS Center Point</small>
               <div className="mt-1" style={{ fontSize: '0.75rem' }}>
-                Lat: {templeLat.toFixed(4)}, Lng: {templeLng.toFixed(4)}
+                Lat: {safeLat.toFixed(4)}, Lng: {safeLng.toFixed(4)}
               </div>
             </div>
           </Popup>
@@ -127,15 +172,17 @@ const TempleMap = ({
         )}
 
         {/* Operational Zone Markers */}
-        {zones.map((zone) => {
+        {normalizedZones.map((zone) => {
           const color = getMarkerColor(zone.risk_level);
           const isSelected = selectedZoneId === zone.id;
           const badge = getZoneIconBadge(zone.zone_type);
+          const lat = typeof zone.latitude === 'number' && !isNaN(zone.latitude) ? zone.latitude : safeLat;
+          const lng = typeof zone.longitude === 'number' && !isNaN(zone.longitude) ? zone.longitude : safeLng;
 
           return (
             <CircleMarker
-              key={zone.id}
-              center={[zone.latitude, zone.longitude]}
+              key={zone.id || zone.zone_code}
+              center={[lat, lng]}
               radius={isSelected ? 24 : 18}
               eventHandlers={{
                 click: () => onSelectZone(zone)

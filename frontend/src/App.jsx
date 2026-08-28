@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Loading from './components/Loading';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Public Auth Pages (Loaded Eagerly for Immediate Interactivity)
 import Login from './pages/Login';
@@ -39,10 +40,12 @@ const Layout = ({ children }) => {
       <Sidebar />
       <div className="d-flex flex-column flex-grow-1 overflow-hidden">
         <Topbar />
-        <main className="flex-grow-1 overflow-auto bg-ivory p-0">
-          <Suspense fallback={<Loading />}>
-            {children}
-          </Suspense>
+        <main className="flex-grow-1 overflow-auto bg-ivory p-0" style={{ minHeight: 'calc(100vh - 65px)', backgroundColor: '#F9F6F0' }}>
+          <ErrorBoundary>
+            <Suspense fallback={<Loading />}>
+              {children}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>
@@ -176,11 +179,13 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

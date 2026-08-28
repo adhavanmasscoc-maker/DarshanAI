@@ -6,6 +6,7 @@ databases:
     plan: free
 
 services:
+  # FastAPI Backend
   - type: web
     name: darshanai-backend
     runtime: python
@@ -32,10 +33,10 @@ services:
       - key: CORS_ORIGINS
         value: "*"
 
-  - type: static
+  # React Vite Frontend
+  - type: web
+    runtime: static
     name: darshanai-frontend
-    region: oregon
-    plan: free
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: "frontend/dist"
 

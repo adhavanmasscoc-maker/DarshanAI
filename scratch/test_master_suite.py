@@ -106,7 +106,7 @@ def run_master_test():
     print(f"[10/10 OK] Combined Dashboard Summary Loaded in 1 HTTP Roundtrip (Temple: {d_out['temple_name']})")
 
     print("\n==========================================================")
-    print("   🎉 ALL 10 MASTER SYSTEM TESTS PASSED SUCCESSFULLY!    ")
+    print("   [SUCCESS] ALL 10 MASTER SYSTEM TESTS PASSED!           ")
     print("==========================================================")
 
 if __name__ == "__main__":

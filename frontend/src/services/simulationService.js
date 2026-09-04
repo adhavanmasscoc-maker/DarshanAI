@@ -1,4 +1,4 @@
-import API from './api';
+import API, { getBaseURL } from './api';
 
 export const simulationService = {
   start: async () => {
@@ -36,6 +36,11 @@ export const simulationService = {
     if (customWs) {
       return new WebSocket(`${customWs}/api/simulation/ws/${templeId}?token=${token}`);
     }
+
+    if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+      return new WebSocket(`wss://darshanai-backend.onrender.com/api/simulation/ws/${templeId}?token=${token}`);
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/simulation/ws/${templeId}?token=${token}`;
     return new WebSocket(wsUrl);

@@ -1,10 +1,16 @@
 import axios from 'axios';
 
-// Resolve API base URL from environment variables with fallback
-const getBaseURL = () => {
+// Resolve API base URL from environment variables with intelligent production fallback
+export const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
-  if (envUrl) return envUrl;
-  return '/api';
+  if (envUrl && envUrl.startsWith('http')) return envUrl;
+
+  // If running on Render or remote domain without relative API proxy
+  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+    return 'https://darshanai-backend.onrender.com/api';
+  }
+
+  return envUrl || '/api';
 };
 
 const API = axios.create({

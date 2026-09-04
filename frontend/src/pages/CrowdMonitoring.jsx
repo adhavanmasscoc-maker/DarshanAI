@@ -75,7 +75,7 @@ const CrowdMonitoring = () => {
 
   if (loading && !analytics) return <Loading />;
 
-  const streamUrl = `/api/cctv/cameras/${selectedCamId}/stream`;
+  const streamUrl = `${API.defaults.baseURL}/cctv/cameras/${selectedCamId}/stream`;
 
   return (
     <div className="container-fluid p-4">

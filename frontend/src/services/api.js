@@ -1,16 +1,27 @@
 import axios from 'axios';
 
-// Resolve API base URL from environment variables with intelligent production fallback
+// Get backend API URL
 export const getBaseURL = () => {
-  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
-  if (envUrl && envUrl.startsWith('http')) return envUrl;
+  const envUrl =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL;
 
-  // If running on Render or remote domain without relative API proxy
-  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl.endsWith('/api')
+      ? envUrl
+      : `${envUrl}/api`;
+  }
+
+  // Render production
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname.includes('onrender.com')
+  ) {
     return 'https://darshanai-backend.onrender.com/api';
   }
 
-  return envUrl || '/api';
+  // Local development
+  return 'http://localhost:8000/api';
 };
 
 const API = axios.create({
@@ -20,29 +31,36 @@ const API = axios.create({
   },
 });
 
-// Request Interceptor to attach JWT token
+// Attach JWT token
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('darshanai_token');
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor for 401 handling
+// Handle 401
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('darshanai_token');
       localStorage.removeItem('darshanai_user');
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+
+      if (
+        window.location.pathname !== '/login' &&
+        window.location.pathname !== '/register'
+      ) {
         window.location.href = '/login';
       }
     }
+
     return Promise.reject(error);
   }
 );
